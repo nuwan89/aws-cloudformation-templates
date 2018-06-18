@@ -1,0 +1,53 @@
+sam deploy --template-file vpc-setup.yaml --stack-name carnival-poc-vpc --capabilities CAPABILITY_IAM
+
+sam deploy --template-file redshift-setup.yaml --stack-name carnival-poc-redshift --capabilities CAPABILITY_IAM --parameter-values MasterUserPassword=caRnival#321
+
+
+
+
+sam package --template-file vpc-setup.yaml --output-template-file vpc-setup-packaged.yaml --s3-bucket carnival-poc-devops
+
+sam deploy --template-file vpc-setup-packaged.yaml --stack-name carnival-poc-vpc --capabilities CAPABILITY_IAM
+
+sam deploy --template-file aws-emr.yaml --stack-name carnival-poc-emr --capabilities CAPABILITY_IAM --parameter-overrides Applications=Spark KeyName=carnival-poc-keypair
+
+
+
+Bootstrap action to install Conda and Jupyter on EMR
+
+https://aws.amazon.com/blogs/big-data/running-jupyter-notebook-and-jupyterhub-on-amazon-emr/
+
+https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-jupyterhub-launch.html
+
+https://gist.github.com/nicor88/5260654eb26f6118772551861880dd67
+
+https://github.com/bgdnlp/emrer/blob/master/emrer_example.yaml
+
+https://medium.com/@datitran/quickstart-pyspark-with-anaconda-on-aws-660252b88c9a
+
+
+
+
+
+
+Bootstrap
+=========
+
+#!/usr/bin/env bash
+
+# install conda
+wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh \
+    && /bin/bash ~/miniconda.sh -b -p $HOME/conda
+
+echo -e '\nexport PATH=$HOME/conda/bin:$PATH' >> $HOME/.bashrc && source $HOME/.bashrc
+
+# install packages
+conda install -y ipython jupyter
+
+
+
+
+ADDING NEW STEPS
+================
+
+aws emr add-steps --cluster-id j-RCLIP3GY95OD --steps Type=spark,Name=TestJob,Args=[--deploy-mode,cluster,--master,yarn,--conf,spark.yarn.submit.waitAppCompletion=true,s3a://carnival-poc-devops/emr-steps/adobe_data_extractor.py,s3a://carnival-poc-devops/data/data.csv,s3a://your-destination-bucket/test-output/],ActionOnFailure=CONTINUE

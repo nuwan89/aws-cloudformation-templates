@@ -1,0 +1,502 @@
+---
+Conditions:
+  IsGovCloud:
+    Fn::Equals:
+    - Ref: AWS::Region
+    - us-gov-west-1
+  IsMultiNodeCluster:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: RedshiftSize
+      - '1'
+Description: 'Matillion ETL CloudFormation (This will create Redshift with Matillion):
+  POC creating new AWS resources --AWSMP::0bdc0ebf-a563-4a9b-b66a-896c1b0910db::4923930a-93a7-436f-a537-7f69ff97385c'
+Mappings:
+  RegionMap:
+    ap-northeast-1:
+      AMI: ami-35b5ae49
+    ap-northeast-2:
+      AMI: ami-095bf567
+    ap-south-1:
+      AMI: ami-dc2305b3
+    ap-southeast-1:
+      AMI: ami-62d5f71e
+    ap-southeast-2:
+      AMI: ami-2938f34b
+    ca-central-1:
+      AMI: ami-1dfe7f79
+    eu-central-1:
+      AMI: ami-a2b29749
+    eu-west-1:
+      AMI: ami-34f0d04d
+    eu-west-2:
+      AMI: ami-cc9d7eab
+    eu-west-3:
+      AMI: ami-7adb6a07
+    us-gov-west-1:
+      AMI: ami-026ffb63
+    sa-east-1:
+      AMI: ami-54b6e638
+    us-east-1:
+      AMI: ami-e0f15e9f
+    us-east-2:
+      AMI: ami-cdb685a8
+    us-west-1:
+      AMI: ami-c4b9aba4
+    us-west-2:
+      AMI: ami-a481eedc
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Networking and Security Configuration
+      Parameters:
+      - KeyName
+      - VPCId
+      - VpcCidrBlock
+      - PrimaryAZ
+      - SecondaryAZ
+      - Subnet1
+      - Subnet2
+      - PublicSubnet
+      - PrivateSubnets
+      - PublicSubnetCidr
+      - PrimaryPublicSubnetCidr
+      - SecondaryPublicSubnetCidr
+      - PrivateSubnetCidr
+      - PrimaryPrivateSubnetCidr
+      - SecondaryPrivateSubnetCidr
+      - InboundCidr
+      - InboundCidrInstance
+      - SecurityGroup
+      - IAMRole
+    - Label:
+        default: Redshift Configuration
+      Parameters:
+      - RedshiftSize
+      - RedshiftNodeType
+      - RedshiftUser
+      - RedshiftPassword
+      - RedshiftDatabaseName
+      - RedshiftPort
+    ParameterLabels:
+      DBAllocatedStorage:
+        default: Storage Size
+      IAMRole:
+        default: IAM Role Name
+      InboundCidr:
+        default: Inbound CIDR
+      InboundCidrALB:
+        default: Security Group IPv4 CIDR
+      InboundCidrInstance:
+        default: Inbound IPv4 CIDR
+      InstanceTypeParameter:
+        default: Instance Type
+      KeyName:
+        default: Keypair Name
+      LBDnsName:
+        default: DNS Prefix
+      PostgresDatabaseName:
+        default: Database Name
+      PostgresHostname:
+        default: Hostname
+      PostgresPassword:
+        default: Master Password
+      PostgresPort:
+        default: Port
+      PostgresUser:
+        default: Master Username
+      PrimaryAZ:
+        default: 'AZ #1'
+      PrimaryPrivateSubnetCidr:
+        default: 'Private Subnet #1'
+      PrimaryPublicSubnetCidr:
+        default: 'Pubic Subnet #1'
+      PrivateSubnets:
+        default: Private Subnets
+      PublicSubnetCidr:
+        default: Public Subnet
+      RdsDBClass:
+        default: Instance Class
+      RealmConName:
+        default: Username
+      RealmConPass:
+        default: Connection Password
+      RealmConURL:
+        default: URL
+      RealmMETLAPIRole:
+        default: API Role
+      RealmMETLAdminRole:
+        default: Admin Role
+      RealmMETLRole:
+        default: Login Role
+      RealmRoleBase:
+        default: Role Base
+      RealmRoleName:
+        default: Role Name
+      RealmRoleSearch:
+        default: Role Search
+      RealmUserBase:
+        default: User Base
+      RealmUserSearch:
+        default: User Search
+      RedshiftDatabaseName:
+        default: Database Name
+      RedshiftNodeType:
+        default: Node Type
+      RedshiftPassword:
+        default: Master Password
+      RedshiftPort:
+        default: Port
+      RedshiftSize:
+        default: Redshift Nodes
+      RedshiftUser:
+        default: Master Username
+      SecondaryAZ:
+        default: 'AZ #2'
+      SecondaryPrivateSubnetCidr:
+        default: 'Private Subnet #2'
+      SecondaryPublicSubnetCidr:
+        default: 'Public Subnet #2'
+      SecurityGroup:
+        default: Security Group
+      Subnet1:
+        default: Primary Subnet
+      Subnet2:
+        default: Secondary Subnet
+      VPCId:
+        default: VPC Id
+      VpcCidrBlock:
+        default: VPC IPv4 CIDR
+Outputs:
+  DefaultMatillionUsername:
+    Description: Default Matillion Username
+    Value: ec2-user
+  Ec2Instance0PrivateEndpoint:
+    Description: Private Endpoint for Matillion Instance
+    Value:
+      Fn::GetAtt:
+      - Ec2Instance0
+      - PrivateIp
+  Ec2Instance0PublicEndpoint:
+    Description: Public Endpoint for Matillion Instance
+    Value:
+      Fn::Join:
+      - ''
+      - - http://
+        - Fn::GetAtt:
+          - Ec2Instance0
+          - PublicDnsName
+  Ec2Instance0id:
+    Description: Instance ID (default password)
+    Value:
+      Ref: Ec2Instance0
+  RedshiftDBName:
+    Value:
+      Ref: RedshiftDatabaseName
+  RedshiftDBUsername:
+    Value:
+      Ref: RedshiftUser
+  RedshiftDBPassword:
+    Value:
+      Ref: RedshiftPassword
+  RedshiftDBPort:
+    Value:
+      Ref: RedshiftPort
+  RedshiftClusterEndpoint:
+    Value:
+      Fn::Join:
+      - ":"
+      - - Fn::GetAtt:
+          - MatillionRedshiftCluster
+          - Endpoint.Address
+        - Fn::GetAtt:
+          - MatillionRedshiftCluster
+          - Endpoint.Port
+Parameters:
+  InboundCidrInstance:
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    Description: Inbound IPv4 CIDR Range for Matillion Instance
+    Type: String
+  KeyName:
+    Description: The selected key pair will be added to the set of keys authorized
+      for this instance
+    Type: AWS::EC2::KeyPair::KeyName
+  PrimaryAZ:
+    Description: Select an Availability Zone from the current region
+    Type: AWS::EC2::AvailabilityZone::Name
+  VpcId:
+    Description: The VPC which contains the public subnet.
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetCidr:
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    Default: 172.31.0.0/24
+    Description: Public Subnet CIDR (Must be within VPC CIDR range)
+    Type: String
+  RedshiftDatabaseName:
+    AllowedPattern: "([a-z]|[0-9])+"
+    Default: keurig
+    Description: Initial Redshift Database Name. More databases can be created later.
+    Type: String
+  RedshiftNodeType:
+    AllowedValues:
+    - dc1.large
+    - dc1.8xlarge
+    - dc2.large
+    - dc2.8xlarge
+    - ds1.xlarge
+    - ds1.8xlarge
+    - ds2.xlarge
+    - ds2.8xlarge
+    Default: dc2.large
+    Description: dc=Dense Compute, ds=Dense Storage. All nodes in the cluster will
+      be the same type.
+    Type: String
+  RedshiftPassword:
+    AllowedPattern: "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,64}$"
+    Description: Redshift Password. Must contain one upper and one lower case letter
+      and one digit but not quotes, slashes, @ or spaces.
+    NoEcho: true
+    Type: String
+  RedshiftPort:
+    Default: '5439'
+    Description: Port number on which the database accepts connections.
+    MaxValue: 65535
+    MinValue: 1150
+    Type: Number
+  RedshiftSize:
+    Default: '1'
+    Description: Number of Redshift Nodes created in this new cluster
+    MaxValue: 32
+    MinValue: 1
+    Type: Number
+  RedshiftUser:
+    AllowedPattern: "^[a-zA-Z]{1}[a-z0-9]*"
+    Default: matillion
+    Description: Initial Redshift Username. This user will be an admin role.
+    Type: String
+  VpcCidrBlock:
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    Default: 172.31.0.0/16
+    Description: Specify the IPv4 address range as a Classless Inter-Domain Routing
+      (CIDR) block; for example, 10.0.0.0/16. You cannot specify an IPv4 CIDR block
+      larger than /16.
+    Type: String
+Resources:
+  DHCPOptions:
+    Properties:
+      DhcpOptionsId:
+        Ref: MatillionDHCP
+      VpcId:
+        Ref: VpcId
+    Type: AWS::EC2::VPCDHCPOptionsAssociation
+  Ec2Instance0:
+    DependsOn: []
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          commands:
+            setup:
+              command: "/sbin/service tomcat8 stop && rm -r /var/log/tomcat8/catalina.out
+                && /sbin/service tomcat8 start"
+          files:
+            "/etc/sysconfig/tomcat8":
+              content: echo No further configuration required
+              group: root
+              mode: '000644'
+              owner: root
+    Properties:
+      IamInstanceProfile:
+        Ref: MatillionInstanceProfile
+      ImageId:
+        Fn::FindInMap:
+        - RegionMap
+        - Ref: AWS::Region
+        - AMI
+      InstanceType: t2.medium
+      KeyName:
+        Ref: KeyName
+      SecurityGroupIds:
+      - Ref: MatillionSecurityGroupInboundCidrInstance
+      Tags:
+      - Key: Name
+        Value: Matillion-ETL
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+          - ''
+          - - "#!/bin/bash -xe \n"
+            - "yum update -y aws-cfn-bootstrap \n"
+            - "/opt/aws/bin/cfn-init -v "
+            - " --stack "
+            - Ref: AWS::StackName
+            - " --resource "
+            - Ec2Instance0
+            - " --region "
+            - Ref: AWS::Region
+            - "\n"
+    Type: AWS::EC2::Instance
+  MatillionDHCP:
+    Properties:
+      DomainName:
+        Fn::Join:
+        - ''
+        - - Ref: AWS::Region
+          - ".compute.internal"
+      DomainNameServers:
+      - AmazonProvidedDNS
+    Type: AWS::EC2::DHCPOptions
+  MatillionInstanceProfile:
+    Properties:
+      Roles:
+      - Ref: MatillionRole
+    Type: AWS::IAM::InstanceProfile
+  MatillionRedshiftCluster:
+    DependsOn:
+    - MatillionSecurityGroupInboundCidrInstance
+    Properties:
+      AutomatedSnapshotRetentionPeriod: 30
+      ClusterType:
+        Fn::If:
+        - IsMultiNodeCluster
+        - multi-node
+        - single-node
+      DBName:
+        Ref: RedshiftDatabaseName
+      MasterUserPassword:
+        Ref: RedshiftPassword
+      MasterUsername:
+        Ref: RedshiftUser
+      NodeType:
+        Ref: RedshiftNodeType
+      NumberOfNodes:
+        Fn::If:
+        - IsMultiNodeCluster
+        - Ref: RedshiftSize
+        - Ref: AWS::NoValue
+      Port:
+        Ref: RedshiftPort
+      PubliclyAccessible: 'true'
+      VpcSecurityGroupIds:
+      - Ref: MatillionSecurityGroupInboundCidrInstance
+    Type: AWS::Redshift::Cluster
+  MatillionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - redshift:DescribeClusters
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinRedshift
+          - Action:
+            - s3:ListAllMyBuckets
+            - s3:ListBucket
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+            - s3:GetBucketLocation
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinS3
+          - Action:
+            - sqs:DeleteMessage
+            - sqs:ListQueues
+            - sqs:ReceiveMessage
+            - sqs:SendMessage
+            - sqs:GetQueueUrl
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinSQS
+          - Action:
+            - rds:DescribeDBInstances
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinRDS
+          - Action:
+            - ec2:CreateSnapshot
+            - ec2:CreateTags
+            - ec2:DescribeInstances
+            - ec2:DescribeVolumes
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinEC2
+          - Action:
+            - sns:ListTopics
+            - sns:CreateTopic
+            - sns:Publish
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinSNS
+          - Action:
+            - cloudwatch:PutMetricData
+            - cloudwatch:ListMetrics
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinCloudwatch
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            - logs:DescribeLogStreams
+            Effect: Allow
+            Resource:
+            - Fn::If:
+              - IsGovCloud
+              - arn:aws-us-gov:logs:*:*:*
+              - arn:aws:logs:*:*:*
+            Sid: StmtMinCloudwatchLogs
+          - Action:
+            - kms:ListAliases
+            - kms:Encrypt
+            - kms:Decrypt
+            Effect: Allow
+            Resource:
+            - "*"
+            Sid: StmtMinKMS
+        PolicyName: MatillionRolePolicy
+    Type: AWS::IAM::Role
+  MatillionSecurityGroupInboundCidrInstance:
+    Properties:
+      GroupDescription: MatillionSecurityGroup
+      VpcId:
+        Ref: VpcId
+      SecurityGroupIngress:
+      - CidrIp:
+          Ref: InboundCidrInstance
+        FromPort: '22'
+        IpProtocol: tcp
+        ToPort: '22'
+      - CidrIp:
+          Ref: InboundCidrInstance
+        FromPort: '80'
+        IpProtocol: tcp
+        ToPort: '80'
+      - CidrIp:
+          Ref: InboundCidrInstance
+        FromPort: '443'
+        IpProtocol: tcp
+        ToPort: '443'
+      - CidrIp:
+          Ref: InboundCidrInstance
+        FromPort: '5439'
+        IpProtocol: tcp
+        ToPort: '5439'
+    Type: AWS::EC2::SecurityGroup
+
